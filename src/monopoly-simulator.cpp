@@ -35,24 +35,98 @@ Space::Space(char spaceType, int positionIndex, string spaceName) {
 class Property : public Space { // Derived from Space
 	public:
 		Property();
+		Property(int price, vector<int> rents, char spaceChar, int positionNum, string spaceID);
 	private:
-		
+		int owner;
+		int price;
+		int numHouses;
+		vector<int> rents;
+		bool hasHotel;
 };
 
 Property::Property() {
+	owner = -1;
+	numHouses = 0;
+	hasHotel = false;
+	return;
+}
+
+Property::Property(int price, vector<int> rents, char spaceChar, int positionNum, string spaceID)
+	: Space(spaceChar, positionNum, spaceID)
+{
+	this->price = price;
+	this->rents = rents;
+	owner = -1;
+	numHouses = 0;
+	hasHotel = false;
+	return;
+}
+
+class Tax : public Space { // Derived from Space
+	public:
+		Tax();
+		Tax(int taxRent, char spaceChar, int positionNum, string spaceID);
+	private:
+		int taxRent;
+};
+
+Tax::Tax() {
 	
+	return;
+}
+
+Tax::Tax(int taxRent, char spaceChar, int positionNum, string spaceID)
+	: Space(spaceChar, positionNum, spaceID)
+{
+	this->taxRent = taxRent;
 	return;
 }
 
 class Railroad : public Space { // Derived from Space
 	public:
 		Railroad();
+		Railroad(int price, vector<int> railroadRents, char spaceChar, int positionNum, string spaceID);
 	private:
-		
+		int owner;
+		int price;
+		vector<int> railroadRents;
 };
 
 Railroad::Railroad() {
-	
+	owner = -1;
+	return;
+}
+
+Railroad::Railroad(int price, vector<int> railroadRents, char spaceChar, int positionNum, string spaceID)
+	: Space(spaceChar, positionNum, spaceID)
+{
+	this->price = price;
+	this->railroadRents = railroadRents;
+	owner = -1;
+	return;
+}
+
+class Utility : public Space { // Derived from Space
+	public:
+		Utility();
+		Utility(int price, vector<int> rollRents, char spaceChar, int positionNum, string spaceID);
+	private:
+		int owner;
+		int price;
+		vector<int> rollRents;
+};
+
+Utility::Utility() {
+	owner = -1;
+	return;
+}
+
+Utility::Utility(int price, vector<int> rollRents, char spaceChar, int positionNum, string spaceID)
+	: Space(spaceChar, positionNum, spaceID)
+{
+	this->price = price;
+	this->rollRents = rollRents;
+	owner = -1;
 	return;
 }
 
@@ -196,32 +270,22 @@ vector<int> PlayGame(int turnsToRun) {
 	return spaceFrequencies;
 }
 
-int main() {
-	int i;
-	int j;
+vector<Space> getBoard() {
 	const string BOARD_FILE = "board.txt";
 	ifstream inBoard;
-	ofstream outFS;
-	srand(time(0));
-	int numPlayers;
-	string filename;
+	vector<int> spaceRents;
+	Space newSpace;
 	string nameOfSpace;
 	char typeOfSpace;
 	int purchasePrice;
-	int rent;
-	vector<int> rents;
-	
-	vector<Player> players;
-	vector<Space> board;
-	
-	cout << "Please enter the number of players to simulate." << endl;
-	cin >> numPlayers;
-	cout << "Please enter the name of the output .csv file to be generated." << endl;
-	cin >> filename;
-	filename += ".csv";
+	int spaceRent;
+	int spacePos;
+	vector<Space> gameBoard;
+	int i;
+
 	inBoard.open(BOARD_FILE.c_str());
-	
-	i = 0;
+
+	spacePos = 0;
 	while (!inBoard.eof()) {
 		inBoard >> nameOfSpace;
 		//Ignores any trailing whitespace at the end of the file
@@ -229,52 +293,66 @@ int main() {
 			inBoard >> typeOfSpace;
 			//Handles each designated type of space, shown in order of appearance on the official game board.
 			switch(typeOfSpace){
-				//Go
-				case 'G':
-					
-					break;
 				//Property
 				case 'P':
-					
-					break;
-				//Community Chest
-				case 'C':
-					
+					inBoard >> purchasePrice;
+					for (i = 0; i < 7; i++) {
+						inBoard >> spaceRent;
+						spaceRents.push_back(spaceRent);
+					}
+					newSpace = Property(purchasePrice, spaceRents, typeOfSpace, spacePos, nameOfSpace);
 					break;
 				//Tax
 				case 'T':
-					
+					inBoard >> spaceRent;
+					newSpace = Tax(spaceRent, typeOfSpace, spacePos, nameOfSpace);
 					break;
 				//Railroad
 				case 'R':
-					
-					break;
-				//cHance
-				case 'H':
-					
-					break;
-				//Jail
-				case 'J':
-					
+					inBoard >> purchasePrice;
+					for (i = 0; i < 4; i++) {
+						inBoard >> spaceRent;
+						spaceRents.push_back(spaceRent);
+					}
+					newSpace = Railroad(purchasePrice, spaceRents, typeOfSpace, spacePos, nameOfSpace);
 					break;
 				//Utility
 				case 'U':
-					
+					inBoard >> purchasePrice;
+					for (i = 0; i < 2; i++) {
+						inBoard >> spaceRent;
+						spaceRents.push_back(spaceRent);
+					}
+					newSpace = Utility(purchasePrice, spaceRents, typeOfSpace, spacePos, nameOfSpace);
 					break;
-				//Free Parking
-				case 'F':
-					
-					break;
-				//Go "2" Jail
-				case '2':
-					
-					break;
+				//"Go" (G), "Community Chest" (C), "Chance" (H), "Jail" (J), "Free Parking" (F), or "Go to Jail" (2)
+				default:
+					newSpace = Space(typeOfSpace, spacePos, nameOfSpace);
 			}
 			nameOfSpace.clear(); //Clears nameOfSpace for the next iteration
-			i++; //Increments board position index for the next property
+			spacePos++; //Increments board position index for the next property
 		}
 	}
 	inBoard.close();
+	return gameBoard;
+}
+
+int main() {
+	ofstream outFS;
+	srand(time(0));
+	int numPlayers;
+	int i;
+	vector<Player> players;
+	vector<Space> board;
+	string filename;
+	
+	cout << "Please enter the number of players to simulate." << endl;
+	cin >> numPlayers;
+	cout << "Please enter the name of the output .csv file to be generated." << endl;
+	cin >> filename;
+	filename += ".csv";
+	
+	board = getBoard();
 	
 	for (i = 0; i < numPlayers; i++) {
 	
