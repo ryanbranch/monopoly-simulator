@@ -13,6 +13,13 @@ class Space {
 	public:
 		Space();
 		Space(char spaceType, int positionIndex, string spaceName);
+		string GetSpaceName();
+		int GetSpacePosition();
+		char GetSpaceType();
+		int GetOwner();
+		int GetRent();
+		int GetBuildingCost();
+		char GetColor();
 	private:
 		char spaceType;
 		int positionIndex;
@@ -32,16 +39,52 @@ Space::Space(char spaceType, int positionIndex, string spaceName) {
 	return;
 }
 
+string Space::GetSpaceName() { //Will not be necessary in the final product
+	return spaceName;
+}
+
+int Space::GetSpacePosition() {
+	return positionIndex;
+}
+
+char Space::GetSpaceType() {
+	return spaceType;
+}
+
+int Space::GetOwner() {
+	return -1;
+}
+
+int Space::GetRent() {
+	return 0;
+}
+
+int Space::GetBuildingCost() {
+	return 0;
+}
+
+char Space::GetColor() {
+	return ' ';
+}
+
 class Property : public Space { // Derived from Space
 	public:
 		Property();
-		Property(int price, vector<int> rents, char spaceChar, int positionNum, string spaceID);
+		Property(int price, vector<int> rents, int buildingCost, char color, char spaceChar, int positionNum, string spaceID);
+		int GetOwner();
+		int GetRent(bool isMonopoly);
+		char GetColor();
+		int GetBuildingCost();
+		bool CheckMonopoly();
+		void SetOwner(int newOwner);
 	private:
 		int owner;
 		int price;
 		int numHouses;
 		vector<int> rents;
 		bool hasHotel;
+		int buildingCost;
+		char color;
 };
 
 Property::Property() {
@@ -51,21 +94,58 @@ Property::Property() {
 	return;
 }
 
-Property::Property(int price, vector<int> rents, char spaceChar, int positionNum, string spaceID)
+Property::Property(int price, vector<int> rents, int buildingCost, char color, char spaceChar, int positionNum, string spaceID)
 	: Space(spaceChar, positionNum, spaceID)
 {
 	this->price = price;
 	this->rents = rents;
+	this->buildingCost = buildingCost;
+	this->color = color;
 	owner = -1;
 	numHouses = 0;
 	hasHotel = false;
 	return;
 }
 
+int Property::GetOwner() {
+	return owner;
+}
+
+int Property::GetRent(bool isMonopoly) {
+	int propertyRent;
+	if (hasHotel) {
+		propertyRent = rents[5];
+	}
+	else {
+		int propertyRent = rents[numHouses];
+		if (numHouses == 0) {
+			propertyRent *= 2;
+		}
+	}
+	return propertyRent;
+}
+
+char Property::GetColor() {
+	return color;
+}
+
+int Property::GetBuildingCost() {
+	return buildingCost;
+}
+
+bool Property::CheckMonopoly() {
+	return 0;
+}
+
+void Property::SetOwner(int newOwner) {
+	owner = newOwner;
+}
+
 class Tax : public Space { // Derived from Space
 	public:
 		Tax();
 		Tax(int taxRent, char spaceChar, int positionNum, string spaceID);
+		int GetRent();
 	private:
 		int taxRent;
 };
@@ -82,10 +162,17 @@ Tax::Tax(int taxRent, char spaceChar, int positionNum, string spaceID)
 	return;
 }
 
+int Tax::GetRent() {
+	return taxRent;
+}
+
 class Railroad : public Space { // Derived from Space
 	public:
 		Railroad();
 		Railroad(int price, vector<int> railroadRents, char spaceChar, int positionNum, string spaceID);
+		int GetOwner();
+		int GetRent(int rentIndex);
+		void SetOwner(int newOwner);
 	private:
 		int owner;
 		int price;
@@ -106,10 +193,25 @@ Railroad::Railroad(int price, vector<int> railroadRents, char spaceChar, int pos
 	return;
 }
 
+int Railroad::GetOwner() {
+	return owner;
+}
+
+int Railroad::GetRent(int rentIndex) {
+	return railroadRents[rentIndex];
+}
+
+void Railroad::SetOwner(int newOwner) {
+	owner = newOwner;
+}
+
 class Utility : public Space { // Derived from Space
 	public:
 		Utility();
 		Utility(int price, vector<int> rollRents, char spaceChar, int positionNum, string spaceID);
+		int GetOwner();
+		int GetRent(int rentIndex);
+		void SetOwner(int newOwner);
 	private:
 		int owner;
 		int price;
@@ -130,15 +232,29 @@ Utility::Utility(int price, vector<int> rollRents, char spaceChar, int positionN
 	return;
 }
 
+int Utility::GetOwner() {
+	return owner;
+}
+
+int Utility::GetRent(int rentIndex) {
+	return rollRents[rentIndex];
+}
+
+void Utility::SetOwner(int newOwner) {
+	owner = newOwner;
+}
+
 class Player {
 	public:
 		Player();
 	private:
-		
+		int position;
+		bool isBankrupt;
 };
 
 Player::Player() {
-	
+	position = 0;
+	isBankrupt = false;
 	return;
 }
 
@@ -277,9 +393,11 @@ vector<Space> getBoard() {
 	Space newSpace;
 	string nameOfSpace;
 	char typeOfSpace;
+	char spaceColor;
 	int purchasePrice;
 	int spaceRent;
 	int spacePos;
+	int spaceBuildingCost;
 	vector<Space> gameBoard;
 	int i;
 
@@ -296,11 +414,13 @@ vector<Space> getBoard() {
 				//Property
 				case 'P':
 					inBoard >> purchasePrice;
-					for (i = 0; i < 7; i++) {
+					for (i = 0; i < 6; i++) {
 						inBoard >> spaceRent;
 						spaceRents.push_back(spaceRent);
 					}
-					newSpace = Property(purchasePrice, spaceRents, typeOfSpace, spacePos, nameOfSpace);
+					inBoard >> spaceBuildingCost;
+					inBoard >> spaceColor;
+					newSpace = Property(purchasePrice, spaceRents, spaceBuildingCost, spaceColor, typeOfSpace, spacePos, nameOfSpace);
 					break;
 				//Tax
 				case 'T':
@@ -331,6 +451,7 @@ vector<Space> getBoard() {
 			}
 			nameOfSpace.clear(); //Clears nameOfSpace for the next iteration
 			spacePos++; //Increments board position index for the next property
+			gameBoard.push_back(newSpace);
 		}
 	}
 	inBoard.close();
@@ -345,6 +466,7 @@ int main() {
 	vector<Player> players;
 	vector<Space> board;
 	string filename;
+	bool enoughPlayers = true;
 	
 	cout << "Please enter the number of players to simulate." << endl;
 	cin >> numPlayers;
@@ -358,8 +480,14 @@ int main() {
 	
 	}
 	
-	outFS.open(filename.c_str());
-
-	outFS.close();
+	cout << endl;
+	
+	for (i = 0; i < board.size(); i++) {
+		cout << board[i].GetSpaceName() << endl << board[i].GetSpacePosition() << "\t" << board[i].GetSpaceType() << "\t" << board[i].GetColor() << "\t" << board[i].GetBuildingCost() << endl << endl;
+		
+	}
+	
+	//outFS.open(filename.c_str());
+	//outFS.close();
 	return 0;
 }
