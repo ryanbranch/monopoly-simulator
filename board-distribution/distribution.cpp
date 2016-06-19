@@ -9,16 +9,6 @@
 
 using namespace std;
 
-int RollDie() {
-	int roll = ((rand() % 6) + 1) + ((rand() % 6) + 1);
-	return roll;
-}
-
-int MovePlayer(int position) {
-	position = (position + RollDie()) % 40;
-	return position;
-}
-
 vector<int> SeedDeck(vector<int> deck, int numSeeds) {
 	int i;
 	bool seeded;
@@ -113,23 +103,79 @@ vector<int> PlayGame(int turnsToRun) {
 	int i;
 	int j;
 	int k;
+	bool secondLastDubs = false;
+	bool lastDubs = false;
+	bool currentDubs = false;
+	bool inJail = false;
+	int jailTurnsLeft = 0;
 	chanceDeck = SeedDeck(chanceDeck, 9);
 	communityChestDeck = SeedDeck(communityChestDeck, 2);
 	for (i = 0; i < turnsToRun; i++) {
-		playerPos = MovePlayer(playerPos);
+		int roll1 = (rand() % 6) + 1;
+		int roll2 = (rand() % 6) + 1;
 		
-		if (playerPos == 30) {
-			playerPos = 10;
+		//Checks for rolling the same number twice, AKA "doubles" or "dubs"
+		if (roll1 == roll2) {
+			currentDubs = true;
+			
+			//If you're not in jail and your last 3 rolls are dubs, you go to jail
+			if ((!(inJail)) && ((lastDubs) && (secondLastDubs))) {
+				playerPos = 10;
+				inJail = true;
+				
+				//This jailTurnsLeft is set to 3, and not 2, due to control flow management
+				jailTurnsLeft = 3;
+				
+				//Ensures that rolling 4 dubs in a row doesn't count as 2 sets of 3 dubs in a row
+				currentDubs = false;
+			}
+				
+			//If you are in jail and you roll dubs, you get out of jail
+			else if (inJail) {
+				inJail = false;
+				jailTurnsLeft = 0;
+			}
 		}
-		else if ((playerPos == 2) || (playerPos == 17) || (playerPos == 33)) {
-			cardDrawn = takeFromDeck(communityChestDeck);
-			playerPos = DoCC(cardDrawn, playerPos);
+		
+		//If you're not in jail, you move normally and check conditions
+		if (!(inJail)) {
+			//move
+			playerPos += (roll1 + roll2);
+			playerPos = playerPos % 40;
+			
+			//check conditions
+			if (playerPos == 30) {
+				playerPos = 10;
+				inJail = true;
+				
+				//This jailTurnsLeft is set to 2, and not 3, due to control flow management
+				jailTurnsLeft = 2;
+			}
+			else if ((playerPos == 2) || (playerPos == 17) || (playerPos == 33)) {
+				cardDrawn = takeFromDeck(communityChestDeck);
+				playerPos = DoCC(cardDrawn, playerPos);
+			}
+			else if ((playerPos == 7) || (playerPos == 22) || (playerPos == 36) ) {
+				cardDrawn = takeFromDeck(chanceDeck);
+				playerPos = DoCh(cardDrawn, playerPos);
+			}
 		}
-		else if ((playerPos == 7) || (playerPos == 22) || (playerPos == 36) ) {
-			cardDrawn = takeFromDeck(chanceDeck);
-			playerPos = DoCh(cardDrawn, playerPos);
+		else {
+			if (jailTurnsLeft == 0) {
+				playerPos += (roll1 + roll2);
+				playerPos = playerPos % 40;
+				inJail = false;
+				jailTurnsLeft = 0;
+			}
+			else {
+				jailTurnsLeft--;
+			}
 		}
+		
 		spaceFrequencies[playerPos]++;
+		secondLastDubs = lastDubs;
+		lastDubs = currentDubs;
+		currentDubs = false;
 	}
 	return spaceFrequencies;
 }

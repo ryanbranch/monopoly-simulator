@@ -44,3 +44,10 @@ Temporary Items
 
 # PyCharm
 .idea
+
+# Excel/CSV
+*.xlsx
+*.csv
+
+# Compiled C++
+*.exe
